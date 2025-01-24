@@ -1,12 +1,5 @@
 import os
 import requests
-from flask import Flask, request, jsonify
-
-# Flask app to listen for Slack events
-app = Flask(__name__)
-
-# A simple mapping to track Slack messages and PRs
-message_to_pr_map = {}
 
 def fetch_dependabot_prs(token, repos):
     """Fetch Dependabot PRs from specified GitHub repositories."""
@@ -17,88 +10,71 @@ def fetch_dependabot_prs(token, repos):
         url = f"https://api.github.com/repos/{repo}/pulls"
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        
+
         for pr in response.json():
-            # Filter Dependabot PRs by checking user login
-            # if "dependabot" in pr.get("user", {}).get("login", ""):
+            if "dependabot" in pr.get("user", {}).get("login", ""):
                 dependabot_prs.append({
                     "repo": repo,
                     "title": pr["title"],
-                    "url": pr["html_url"],
-                    "number": pr["number"]
+                    "url": pr["html_url"]
                 })
     return dependabot_prs
 
-def send_to_slack(webhook_url, prs):
-    """Send the Dependabot PRs to Slack."""
-    if prs:
-        message = "*📢 Dependabot PRs:*"
-        for pr in prs:
-            message += f"\n- *{pr['repo']}*: <{pr['url']}|{pr['title']}>"
-    else:
-        message = "No Dependabot PRs found."
+def send_to_slack(token, channel, prs):
+    """Send the Dependabot PRs to Slack in a thread."""
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
 
-    payload = {"text": message}
-    response = requests.post(webhook_url, json=payload)
+    # Post the main message to the channel
+    main_message = {
+        "channel": channel,
+        "text": "*📢 Dependabot PRs:*"
+    }
+    response = requests.post("https://slack.com/api/chat.postMessage", json=main_message, headers=headers)
+    response_data = response.json()
+    response.raise_for_status()
 
-    # Debug: Print response details
-    print("Status Code:", response.status_code)
-    print("Response Text:", response.text)
+    if not response_data.get("ok"):
+        raise Exception(f"Failed to send message to Slack: {response_data}")
 
-    response.raise_for_status()  # Raise HTTP errors
+    thread_ts = response_data["ts"]  # Timestamp of the main message
 
-    try:
-        response_data = response.json()  # Attempt to decode JSON
-    except ValueError:
-        print("Slack returned a non-JSON response.")
-        response_data = {}
+    # Post each PR as a threaded reply
+    for pr in prs:
+        # Formatting with added spacing for separation
+        thread_message = {
+            "channel": channel,
+            "text": (
+                f"*🔹 Repository:* {pr['repo']}\n"
+                f"➡️ *Title:* {pr['title']}\n\n"
+                f"{pr['url']}\n\n"  # Ensure the URL is on its own line for GitHub preview\n"
+                f"------------------------------"  # Visual divider for separation
+            ),
+            "thread_ts": thread_ts
+        }
+        thread_response = requests.post("https://slack.com/api/chat.postMessage", json=thread_message, headers=headers)
+        thread_response_data = thread_response.json()
+        thread_response.raise_for_status()
 
-    return response_data
+        if not thread_response_data.get("ok"):
+            raise Exception(f"Failed to send threaded message to Slack: {thread_response_data}")
 
-def merge_pull_request(github_token, repo, pr_number):
-    """Merge a pull request using the GitHub API."""
-    headers = {"Authorization": f"Bearer {github_token}"}
-    url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/merge"
-    response = requests.put(url, headers=headers)
-    if response.status_code == 200:
-        print(f"Successfully merged PR #{pr_number} in {repo}")
-    else:
-        print(f"Failed to merge PR #{pr_number} in {repo}: {response.text}")
-
-@app.route("/slack/events", methods=["POST"])
-def slack_event_handler():
-    """Handle Slack events and respond to verification challenges."""
-    event_data = request.json
-
-    # Respond to the challenge request
-    if "challenge" in event_data:
-        return jsonify({"challenge": event_data["challenge"]})
-
-    # Handle reaction events (same as before)
-    if "event" in event_data:
-        event = event_data["event"]
-
-        if event["type"] == "reaction_added":
-            reaction = event["reaction"]
-            ts = event["item"]["ts"]
-
-            # Check if the reaction is ✅ and the message is tracked
-            if reaction == "white_check_mark" and ts in message_to_pr_map:
-                pr = message_to_pr_map[ts]
-                github_token = os.getenv("GITHUB_TOKEN")
-                merge_pull_request(github_token, pr["repo"], pr["number"])
-
-    return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
     # Fetch environment variables
     github_token = os.getenv("GITHUB_TOKEN")
-    slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    slack_token = os.getenv("SLACK_TOKEN")
+    slack_channel = os.getenv("SLACK_CHANNEL", "#automation")
     repositories = os.getenv("REPOSITORIES")
 
     print("Fetching Dependabot PRs...")
-    prs = fetch_dependabot_prs(github_token, repositories)
-    send_to_slack(slack_webhook_url, prs)
 
-    # Start the Flask app to listen for Slack events
-    app.run(port=3000)
+    # Fetch Dependabot PRs and send to Slack
+    prs = fetch_dependabot_prs(github_token, repositories)
+
+    if prs:
+        send_to_slack(slack_token, slack_channel, prs)
+    else:
+        print("No Dependabot PRs found.")
