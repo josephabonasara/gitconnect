@@ -1,12 +1,13 @@
 import os
 import requests
+import argparse
 
 def fetch_dependabot_prs(token, repos):
     """Fetch Dependabot PRs from specified GitHub repositories."""
     headers = {"Authorization": f"Bearer {token}"}
     dependabot_prs = []
 
-    for repo in repos.split(","):
+    for repo in repos:
         url = f"https://api.github.com/repos/{repo}/pulls"
         response = requests.get(url, headers=headers)
         response.raise_for_status()
@@ -43,13 +44,12 @@ def send_to_slack(token, channel, prs):
 
     # Post each PR as a threaded reply
     for pr in prs:
-        # Formatting with added spacing for separation
         thread_message = {
             "channel": channel,
             "text": (
                 f"*🔹 Repository:* {pr['repo']}\n"
                 f"➡️ *Title:* {pr['title']}\n\n"
-                f"{pr['url']}\n\n"  # Ensure the URL is on its own line for GitHub preview\n"
+                f"{pr['url']}\n\n"
                 f"------------------------------"  # Visual divider for separation
             ),
             "thread_ts": thread_ts
@@ -63,16 +63,22 @@ def send_to_slack(token, channel, prs):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Dependabot PR Notifier")
+    parser.add_argument(
+        "--repos", nargs="+", required=True,
+        help="List of repositories to monitor, e.g., 'org/repo1 org/repo2'"
+    )
+    args = parser.parse_args()
+
     # Fetch environment variables
     github_token = os.getenv("GITHUB_TOKEN")
     slack_token = os.getenv("SLACK_TOKEN")
     slack_channel = os.getenv("SLACK_CHANNEL", "#automation")
-    repositories = os.getenv("REPOSITORIES")
 
     print("Fetching Dependabot PRs...")
 
     # Fetch Dependabot PRs and send to Slack
-    prs = fetch_dependabot_prs(github_token, repositories)
+    prs = fetch_dependabot_prs(github_token, args.repos)
 
     if prs:
         send_to_slack(slack_token, slack_channel, prs)

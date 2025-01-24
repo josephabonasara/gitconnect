@@ -30,6 +30,5 @@ jobs:
     - name: Run Dependabot Notifier
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        REPOSITORIES: ${{ secrets.REPOSITORIES }}
-      run: python scripts/dependabot_notifier.py
+        SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      run: python scripts/dependabot_notifier.py --repos "dependabot/dependabot-core" "another/repository" "example/repo"
