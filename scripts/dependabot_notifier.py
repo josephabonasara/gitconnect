@@ -1,6 +1,6 @@
 import os
 import requests
-import argparse
+import json
 
 def fetch_dependabot_prs(token, repos):
     """Fetch Dependabot PRs from specified GitHub repositories."""
