@@ -1,9 +1,5 @@
 name: Notify Dependabot PRs
 
-defaults:
-  run:
-    working-directory: ./scripts
-
 on:
   workflow_dispatch:  # Allow manual trigger
   schedule:
@@ -14,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Use the public action
+    - name: Checkout code
+      uses: actions/checkout@v3
+
     - name: Notify Dependabot PRs
       uses: ./.github/actions/dependabot-notifications/action.yml
       with:
