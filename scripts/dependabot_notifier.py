@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # Fetch environment variables
     github_token = os.getenv("GITHUB_TOKEN")
     slack_token = os.getenv("SLACK_TOKEN")
-    slack_channel = os.getenv("SLACK_CHANNEL", "#automation")
+    slack_channel = os.getenv("SLACK_CHANNEL", "#dependabot-notifications")
 
     # Parse repositories from environment variable
     repositories = json.loads(os.getenv("REPOSITORIES", "[]"))

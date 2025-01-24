@@ -1,0 +1,39 @@
+name: Notify Dependabot PRs
+description: A GitHub Action to send Dependabot PR notifications to a Slack channel.
+author: Your Name
+inputs:
+  slack-token:
+    description: "Slack bot token (xoxb-...) for sending notifications"
+    required: true
+  github-token:
+    description: "GitHub token to fetch Dependabot PRs"
+    required: true
+  slack-channel:
+    description: "Slack channel to post messages"
+    required: true
+  repositories:
+    description: "JSON array of repositories to monitor (e.g., '[\"org/repo1\", \"org/repo2\"]')"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Check out the code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Dependabot Notifier
+      run: python scripts/dependabot_notifier.py
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SLACK_TOKEN: ${{ inputs.slack-token }}
+        SLACK_CHANNEL: ${{ inputs.slack-channel }}
+        REPOSITORIES: ${{ inputs.repositories }}
