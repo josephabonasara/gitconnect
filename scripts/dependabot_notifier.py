@@ -1,6 +1,11 @@
 import os
 import requests
 import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def fetch_dependabot_prs(token, repos):
     """Fetch Dependabot PRs from specified GitHub repositories."""
@@ -9,7 +14,7 @@ def fetch_dependabot_prs(token, repos):
 
     for repo in repos:
         url = f"https://api.github.com/repos/{repo}/pulls"
-        print(f"Fetching PRs from: {url}")  # Debugging
+        logger.info(f"Fetching PRs from: {url}")
         response = requests.get(url, headers=headers)
         response.raise_for_status()
 
@@ -39,6 +44,7 @@ def send_to_slack(token, channel, prs):
     response.raise_for_status()
 
     if not response_data.get("ok"):
+        logger.error(f"Failed to send message to Slack: {response_data}")
         raise Exception(f"Failed to send message to Slack: {response_data}")
 
     thread_ts = response_data["ts"]  # Timestamp of the main message
@@ -60,8 +66,8 @@ def send_to_slack(token, channel, prs):
         thread_response.raise_for_status()
 
         if not thread_response_data.get("ok"):
+            logger.error(f"Failed to send threaded message to Slack: {thread_response_data}")
             raise Exception(f"Failed to send threaded message to Slack: {thread_response_data}")
-
 
 if __name__ == "__main__":
     # Fetch environment variables
@@ -72,10 +78,11 @@ if __name__ == "__main__":
     # Parse repositories from environment variable
     repositories = json.loads(os.getenv("REPOSITORIES", "[]"))
 
-    print("Fetching Dependabot PRs...")
+    logger.info("Fetching Dependabot PRs...")
     prs = fetch_dependabot_prs(github_token, repositories)
 
     if prs:
         send_to_slack(slack_token, slack_channel, prs)
+        logger.info("Dependabot PR notifications sent successfully.")
     else:
-        print("No Dependabot PRs found.")
+        logger.info("No Dependabot PRs found.")
