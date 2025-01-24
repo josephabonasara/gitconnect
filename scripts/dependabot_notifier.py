@@ -9,6 +9,7 @@ def fetch_dependabot_prs(token, repos):
 
     for repo in repos:
         url = f"https://api.github.com/repos/{repo}/pulls"
+        print(f"Fetching PRs from: {url}")  # Debugging
         response = requests.get(url, headers=headers)
         response.raise_for_status()
 
@@ -63,22 +64,16 @@ def send_to_slack(token, channel, prs):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Dependabot PR Notifier")
-    parser.add_argument(
-        "--repos", nargs="+", required=True,
-        help="List of repositories to monitor, e.g., 'org/repo1 org/repo2'"
-    )
-    args = parser.parse_args()
-
     # Fetch environment variables
     github_token = os.getenv("GITHUB_TOKEN")
     slack_token = os.getenv("SLACK_TOKEN")
     slack_channel = os.getenv("SLACK_CHANNEL", "#automation")
 
-    print("Fetching Dependabot PRs...")
+    # Parse repositories from environment variable
+    repositories = json.loads(os.getenv("REPOSITORIES", "[]"))
 
-    # Fetch Dependabot PRs and send to Slack
-    prs = fetch_dependabot_prs(github_token, args.repos)
+    print("Fetching Dependabot PRs...")
+    prs = fetch_dependabot_prs(github_token, repositories)
 
     if prs:
         send_to_slack(slack_token, slack_channel, prs)
