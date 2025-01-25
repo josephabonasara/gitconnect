@@ -68,30 +68,26 @@ Create a workflow file in `.github/workflows/dependabot-notifications.yml`:
 name: Notify Dependabot PRs
 
 on:
-  workflow_dispatch:  # Allow manual trigger
-  schedule:
-    - cron: "0 9 * * *"  # Runs daily at 9 AM UTC
+    workflow_dispatch:
+    schedule:
+      - cron: "0 12 * * *"
 
 jobs:
-  notify-dependabot-prs:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Notify Dependabot PRs
-      uses: ./.github/actions/dependabot-notifications
-      with:
-        slack-token: ${{ secrets.SLACK_TOKEN }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        slack-channel: "#dependabot-notifications"
-        repositories: |
-          [
-            "dependabot/dependabot-core",
-            "your-org/another-repo",
-            "example/example-repo"
-          ]
+    notify-dependabot-prs:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Notify Dependabot PRs
+          uses: josephabonasara/gitconnect/.github/actions/dependabot-notifications@main
+          with:
+            slack-token: ${{ secrets.SLACK_TOKEN }}
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            slack-channel: "#dependabot-notifications" # your slack channel name
+            repositories: | # your repositories
+            [
+                "dependabot/dependabot-core",
+                "your-org/another-repo",
+                "example/example-repo"
+            ]
 ```
 
 ---
