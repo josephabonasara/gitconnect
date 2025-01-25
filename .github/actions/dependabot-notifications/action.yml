@@ -26,13 +26,13 @@ runs:
         python-version: "3.12"
 
     - name: Install dependencies
-      shell: bash
       run: |
         python -m pip install --upgrade pip
-        pip install -r ./.github/actions/dependabot-notifications/requirements.txt
+        pip install -r requirements.txt
+      working-directory: ./.github/actions/dependabot-notifications  # Always relative to the reusable action
 
     - name: Run Dependabot Notifier
-      run: python scripts/dependabot_notifier.py
+      run: python ./.github/actions/dependabot-notifications/scripts/dependabot_notifier.py
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
