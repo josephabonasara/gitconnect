@@ -77,7 +77,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Notify Dependabot PRs
-          uses: josephabonasara/gitconnect/.github/actions/dependabot-notifications@main
+          uses: josephabonasara/gitconnect/.github/actions/dependabot-notifications@v1
           with:
             slack-token: ${{ secrets.SLACK_TOKEN }}
             github-token: ${{ secrets.GITHUB_TOKEN }}
