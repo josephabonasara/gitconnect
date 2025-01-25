@@ -26,10 +26,10 @@ runs:
       shell: bash
       run: |
         python -m pip install --upgrade pip
-        pip install -r .github/actions/dependabot-notifications/requirements.txt
+        pip install requests
 
     - name: Run Dependabot Notifier
-      run: python .github/actions/dependabot-notifications/scripts/dependabot_notifier.py
+      run: python ${{ github.action_path }}/scripts/dependabot_notifier.py
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
