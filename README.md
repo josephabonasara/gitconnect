@@ -70,7 +70,7 @@ name: Notify Dependabot PRs
 on:
     workflow_dispatch:
     schedule:
-      - cron: "0 12 * * *"
+      - cron: "0 12 * * *" # Runs daily at 7 AM EST
 
 jobs:
     notify-dependabot-prs:
